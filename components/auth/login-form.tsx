@@ -72,7 +72,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md border-border/60 bg-card/80 shadow-2xl shadow-black/40 backdrop-blur-md">
+    <Card className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 shadow-none">
       <CardHeader className="gap-2 text-center">
         <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
           <span className="text-lg font-semibold tracking-tight">C</span>

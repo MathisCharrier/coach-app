@@ -1,0 +1,116 @@
+"use client";
+
+import { Activity, ArrowLeft, CalendarDays, UserRound, X } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { CalendarView } from "@/components/CalendarView";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "cn";
+
+type AppHeaderProps = {
+  subtitle?: string;
+  backHome?: boolean;
+};
+
+export function AppHeader({
+  subtitle = "Coach multi-sports",
+  backHome = false,
+}: AppHeaderProps) {
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  useEffect(() => {
+    if (!showCalendar) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setShowCalendar(false);
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [showCalendar]);
+
+  return (
+    <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="space-y-1">
+        <Link href="/" className="inline-flex items-center gap-2">
+          <Activity className="size-4 text-emerald-500" aria-hidden />
+          <span className="text-sm font-medium tracking-tight text-zinc-50">
+            Coach
+          </span>
+        </Link>
+        <p className="text-sm text-zinc-400">{subtitle}</p>
+      </div>
+
+      <nav className="flex items-center gap-2">
+        {backHome ? (
+          <Link
+            href="/"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "rounded-full border-zinc-800 bg-transparent text-zinc-200 hover:bg-zinc-900"
+            )}
+          >
+            <ArrowLeft className="size-4" />
+            Retour à l&apos;accueil
+          </Link>
+        ) : null}
+        <button
+          type="button"
+          aria-pressed={showCalendar}
+          onClick={() => setShowCalendar(true)}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "rounded-full border-zinc-800 bg-transparent text-zinc-200 hover:bg-zinc-900"
+          )}
+        >
+          <CalendarDays className="size-4 text-emerald-500" />
+          Calendrier
+        </button>
+        <Link
+          href="/profile"
+          className={cn(
+            buttonVariants({ size: "sm" }),
+            "rounded-full bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+          )}
+        >
+          <UserRound className="size-4" />
+          Profil
+        </Link>
+      </nav>
+
+      {showCalendar ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-4 backdrop-blur-md"
+          onClick={() => setShowCalendar(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Calendrier"
+            className="flex max-h-[min(90vh,52rem)] w-full max-w-5xl flex-col gap-3"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex justify-end">
+              <button
+                type="button"
+                aria-label="Fermer le calendrier"
+                onClick={() => setShowCalendar(false)}
+                className="rounded-full border border-zinc-800 bg-zinc-900 p-2 text-zinc-300"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto">
+              <CalendarView />
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </header>
+  );
+}

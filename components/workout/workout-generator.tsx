@@ -17,6 +17,8 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from "@/components/ui/native-select";
+import { useAthleteStore } from "@/store/useAthleteStore";
+import { useWorkoutPlanStore } from "@/store/useWorkoutPlanStore";
 
 const FATIGUE_OPTIONS = [
   { value: "très fatigué", label: "Très fatigué" },
@@ -35,7 +37,9 @@ type WorkoutResult = {
 };
 
 export function WorkoutGenerator() {
-  const [ftp, setFtp] = useState("260");
+  const athleteFtp = useAthleteStore((s) => s.ftpWatts);
+  const addWorkout = useWorkoutPlanStore((s) => s.addWorkout);
+  const [ftp, setFtp] = useState(String(athleteFtp));
   const [fatigueLevel, setFatigueLevel] =
     useState<(typeof FATIGUE_OPTIONS)[number]["value"]>("normal");
   const [isLoading, setIsLoading] = useState(false);
@@ -78,7 +82,18 @@ export function WorkoutGenerator() {
         return;
       }
 
-      setResult(data as WorkoutResult);
+      const workout = data as WorkoutResult;
+      setResult(workout);
+
+      addWorkout({
+        title: workout.title,
+        description: workout.description,
+        totalDurationSeconds: workout.intervals.reduce(
+          (sum, interval) => sum + interval.duration,
+          0
+        ),
+        intervalCount: workout.intervals.length,
+      });
     } catch {
       setError(
         "Impossible de contacter le serveur. Vérifiez votre connexion."
@@ -90,7 +105,7 @@ export function WorkoutGenerator() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <Card className="h-full border-border/60 bg-card/85 shadow-2xl shadow-black/30 backdrop-blur-md">
+      <Card className="h-full rounded-3xl border border-zinc-800 bg-zinc-900 shadow-none">
         <CardHeader>
           <div className="mb-2 flex size-11 items-center justify-center rounded-full bg-primary/15 text-primary">
             <Sparkles className="size-5" aria-hidden />

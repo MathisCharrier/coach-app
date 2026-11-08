@@ -69,7 +69,7 @@ export function TrainingStatusBanner() {
         : "bg-muted/50 text-muted-foreground ring-border/60";
 
   return (
-    <section className="rounded-2xl border border-border/50 bg-card/75 p-5 shadow-2xl shadow-black/35 backdrop-blur-md md:p-6">
+    <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
