@@ -49,7 +49,7 @@ export function TrainingSecondaryMetrics() {
   }
 
   return (
-    <Card className="rounded-3xl border border-zinc-800 bg-zinc-900 shadow-none">
+    <Card className="rounded-3xl border border-gray-200 bg-white shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           Métriques complémentaires

@@ -2,7 +2,15 @@ import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar, type SerializedCookieJar } from "tough-cookie";
 
+import type { IActivity } from "garmin-connect/dist/garmin/types/activity";
+import { ActivityType } from "garmin-connect/dist/garmin/types/activity";
 import type { IGarminTokens, IOauth1Token } from "garmin-connect/dist/garmin/types";
+
+import {
+  GARMIN_HISTORY_LIMIT,
+  hotSyncGarminClient,
+} from "@/lib/garmin/sync-cycling-activities";
+import type { GarminActivitySummary } from "@/lib/garmin/types";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36";
@@ -23,10 +31,14 @@ export type GarminMfaChallenge = {
 };
 
 export type GarminPasswordLoginResult =
-  | { status: "authenticated"; tokens: IGarminTokens }
+  | {
+      status: "authenticated";
+      tokens: IGarminTokens;
+      activities: GarminActivitySummary[];
+    }
   | { status: "mfa_required"; challenge: GarminMfaChallenge };
 
-type OauthCapableClient = {
+type LiveGarminClient = {
   client: {
     fetchOauthConsumer: () => Promise<void>;
     getOauth1Token: (ticket: string) => Promise<{
@@ -48,6 +60,11 @@ type OauthCapableClient = {
       };
     }) => Promise<void>;
   };
+  getActivities: (
+    start?: number,
+    limit?: number,
+    activityType?: ActivityType
+  ) => Promise<IActivity[]>;
   exportToken: () => IGarminTokens;
 };
 
@@ -105,13 +122,16 @@ function createSsoClient(jar: CookieJar): AxiosInstance {
   );
 }
 
-async function exchangeTicket(ticket: string): Promise<IGarminTokens> {
+async function connectWithTicket(ticket: string): Promise<LiveGarminClient> {
   const { GarminConnect } = await import("garmin-connect");
-  const client = new GarminConnect() as unknown as OauthCapableClient;
+  const client = new GarminConnect({
+    username: "session",
+    password: "session",
+  }) as unknown as LiveGarminClient;
   await client.client.fetchOauthConsumer();
   const oauth1 = await client.client.getOauth1Token(ticket);
   await client.client.exchange(oauth1);
-  return client.exportToken();
+  return client;
 }
 
 function toQuery(params: Record<string, string | boolean>): string {
@@ -178,9 +198,12 @@ export async function beginGarminLogin(
   const ticket = extractTicket(html);
 
   if (ticket) {
+    const live = await connectWithTicket(ticket);
+    const synced = await hotSyncGarminClient(live, GARMIN_HISTORY_LIMIT);
     return {
       status: "authenticated",
-      tokens: await exchangeTicket(ticket),
+      tokens: synced.tokens,
+      activities: synced.activities,
     };
   }
 
@@ -192,12 +215,24 @@ export async function beginGarminLogin(
 
   if (isMfaChallenge(html) || !/name=["']username["']/i.test(html)) {
     const mfaCsrf = CSRF_RE.exec(html)?.[1] ?? csrf;
+    const jarState = await jar.serialize();
+    jarState.cookies = (jarState.cookies ?? []).filter((cookie) => {
+      const domain =
+        cookie &&
+        typeof cookie === "object" &&
+        "domain" in cookie &&
+        typeof cookie.domain === "string"
+          ? cookie.domain
+          : "";
+      return domain.includes("garmin");
+    });
+
     return {
       status: "mfa_required",
       challenge: {
         csrf: mfaCsrf,
         signinUrl,
-        jar: await jar.serialize(),
+        jar: jarState,
       },
     };
   }
@@ -216,7 +251,7 @@ export async function beginGarminLogin(
 export async function submitGarminMfaCode(
   challenge: GarminMfaChallenge,
   mfaCode: string
-): Promise<IGarminTokens> {
+): Promise<{ tokens: IGarminTokens; activities: GarminActivitySummary[] }> {
   const jar = await CookieJar.deserialize(challenge.jar);
   const client = createSsoClient(jar);
 
@@ -245,5 +280,6 @@ export async function submitGarminMfaCode(
     throw new Error("Code MFA invalide ou expiré.");
   }
 
-  return exchangeTicket(ticket);
+  const live = await connectWithTicket(ticket);
+  return hotSyncGarminClient(live, GARMIN_HISTORY_LIMIT);
 }

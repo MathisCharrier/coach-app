@@ -25,7 +25,7 @@ export function SportTabs({
     <div
       role="tablist"
       aria-label="Sports"
-      className="flex gap-1 overflow-x-auto rounded-full border border-zinc-800 bg-zinc-900 p-1"
+      className="flex gap-1 overflow-x-auto rounded-full border border-gray-200 bg-white p-1 shadow-sm"
     >
       {TABS.map((tab) => {
         const Icon = tab.icon;
@@ -39,12 +39,12 @@ export function SportTabs({
             aria-selected={selected}
             onClick={() => onChange(tab.id)}
             className={cn(
-              "inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm text-zinc-400 transition-colors",
-              selected && "bg-zinc-950 text-zinc-50"
+              "inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm text-zinc-500 transition-colors",
+              selected && "bg-orange-50 text-zinc-900"
             )}
           >
             <Icon
-              className={cn("size-4", selected && "text-emerald-500")}
+              className={cn("size-4", selected && "text-orange-500")}
               aria-hidden
             />
             {tab.label}

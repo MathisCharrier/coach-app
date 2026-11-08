@@ -280,7 +280,10 @@ function toQuery(params: Record<string, string | boolean>): string {
 
 async function exchangeTicket(ticket: string): Promise<IGarminTokens> {
   const { GarminConnect } = await import("garmin-connect");
-  const client = new GarminConnect() as unknown as OauthCapableClient;
+  const client = new GarminConnect({
+    username: "session",
+    password: "session",
+  }) as unknown as OauthCapableClient;
   await client.client.fetchOauthConsumer();
   const oauth1 = await client.client.getOauth1Token(ticket);
   await client.client.exchange(oauth1);

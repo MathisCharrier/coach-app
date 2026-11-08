@@ -1,30 +1,27 @@
 "use client";
 
-import { Play, Timer, Zap } from "lucide-react";
+import { BatteryFull, Play, Timer, Zap } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { formatDuration } from "@/lib/garmin/format";
+import { useGarminStore } from "@/store/useGarminStore";
 import { useWorkoutPlanStore } from "@/store/useWorkoutPlanStore";
 import { cn } from "cn";
 
+import {
+  activityTitle,
+  dayKey,
+  formatDistanceOrDuration,
+  formatRelativeDay,
+  useTodayKey,
+} from "./activity-display";
 import { estimatedLoad, SPORT_META, sportFromTitle } from "./sport-kind";
-
-function dayKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export function DailyActivity() {
   const upcoming = useWorkoutPlanStore((state) => state.upcoming);
-  const [todayKey, setTodayKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    setTodayKey(dayKey(new Date()));
-  }, []);
+  const latest = useGarminStore((state) => state.activities[0] ?? null);
+  const todayKey = useTodayKey();
 
   const session =
     upcoming.find((workout) => {
@@ -34,30 +31,45 @@ export function DailyActivity() {
 
   if (!todayKey) {
     return (
-      <section className="h-64 animate-pulse rounded-3xl border border-zinc-800 bg-zinc-900" />
+      <section className="h-64 animate-pulse rounded-3xl border border-gray-200 bg-white shadow-sm" />
+    );
+  }
+
+  if (!session && latest) {
+    return (
+      <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+        <p className="text-sm text-zinc-500">Dernière séance réalisée</p>
+        <h2 className="mt-3 max-w-3xl text-4xl font-medium tracking-tight text-zinc-900 md:text-5xl">
+          {activityTitle(latest)}
+        </h2>
+        <p className="mt-4 text-sm text-zinc-500">
+          {formatRelativeDay(latest.date, todayKey)}
+          {" · "}
+          {formatDistanceOrDuration(latest)}
+        </p>
+        <Link
+          href={`/activity/${latest.id}`}
+          className={cn(
+            buttonVariants({ size: "lg" }),
+            "mt-8 h-11 rounded-full bg-orange-600 px-5 font-medium text-white shadow-sm hover:bg-orange-700"
+          )}
+        >
+          Voir la séance
+        </Link>
+      </section>
     );
   }
 
   if (!session) {
     return (
-      <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6 md:p-8">
-        <p className="text-sm text-zinc-400">Aujourd&apos;hui</p>
-        <h2 className="mt-3 max-w-xl text-4xl font-medium tracking-tight text-white md:text-5xl">
-          Aucune séance prévue
+      <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+        <BatteryFull className="size-8 text-orange-500" aria-hidden />
+        <h2 className="mt-4 max-w-xl text-4xl font-medium tracking-tight text-zinc-900 md:text-5xl">
+          Journée de récupération
         </h2>
         <p className="mt-4 max-w-md text-sm leading-6 text-zinc-500">
-          Génère un entraînement depuis l&apos;espace indoor pour l&apos;afficher ici.
+          Aucune séance prévue aujourd&apos;hui. Le corps consolide le travail déjà fait.
         </p>
-        <Link
-          href="/ride"
-          className={cn(
-            buttonVariants({ size: "lg" }),
-            "mt-8 h-11 rounded-full bg-emerald-500 px-5 text-emerald-950 hover:bg-emerald-400"
-          )}
-        >
-          <Play className="size-4" />
-          Préparer une séance
-        </Link>
       </section>
     );
   }
@@ -67,16 +79,16 @@ export function DailyActivity() {
   const load = estimatedLoad(session.totalDurationSeconds, session.title);
 
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6 md:p-8">
+    <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-zinc-400">Séance du jour</p>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-400">
+        <p className="text-sm text-zinc-500">Séance du jour</p>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs text-orange-600">
           <SportIcon className="size-3.5" aria-hidden />
           {sport.label}
         </span>
       </div>
 
-      <h2 className="mt-4 max-w-3xl text-4xl font-medium tracking-tight text-white md:text-5xl">
+      <h2 className="mt-4 max-w-3xl text-4xl font-medium tracking-tight text-zinc-900 md:text-5xl">
         {session.title}
       </h2>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
@@ -85,20 +97,20 @@ export function DailyActivity() {
 
       <dl className="mt-8 flex flex-wrap gap-8">
         <div>
-          <dt className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
-            <Timer className="size-4 text-emerald-500" aria-hidden />
+          <dt className="inline-flex items-center gap-1.5 text-sm text-zinc-500">
+            <Timer className="size-4 text-orange-500" aria-hidden />
             Durée
           </dt>
-          <dd className="mt-2 text-2xl text-white tabular-nums">
+          <dd className="mt-2 text-2xl text-zinc-900 tabular-nums">
             {formatDuration(session.totalDurationSeconds)}
           </dd>
         </div>
         <div>
-          <dt className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
-            <Zap className="size-4 text-emerald-500" aria-hidden />
+          <dt className="inline-flex items-center gap-1.5 text-sm text-zinc-500">
+            <Zap className="size-4 text-orange-500" aria-hidden />
             Charge
           </dt>
-          <dd className="mt-2 text-2xl text-white tabular-nums">{load}</dd>
+          <dd className="mt-2 text-2xl text-zinc-900 tabular-nums">{load}</dd>
         </div>
       </dl>
 
@@ -106,7 +118,7 @@ export function DailyActivity() {
         href="/ride"
         className={cn(
           buttonVariants({ size: "lg" }),
-          "mt-8 h-11 rounded-full bg-emerald-500 px-5 text-emerald-950 hover:bg-emerald-400"
+          "mt-8 h-11 rounded-full bg-orange-600 px-5 font-medium text-white shadow-sm hover:bg-orange-700"
         )}
       >
         <Play className="size-4" />

@@ -7,6 +7,7 @@ import { useGarminStore } from "@/store/useGarminStore";
 
 type GarminSyncResponse = {
   activities?: GarminActivitySummary[];
+  connected?: boolean;
   sessionExpired?: boolean;
 };
 
@@ -20,6 +21,14 @@ export function useGarminAutoSync() {
     let cancelled = false;
 
     async function refreshSilently() {
+      const current = useGarminStore.getState();
+      const syncedAt = current.lastSyncedAt
+        ? Date.parse(current.lastSyncedAt)
+        : Number.NaN;
+      if (Number.isFinite(syncedAt) && Date.now() - syncedAt < 60_000) {
+        return;
+      }
+
       setIsSyncing(true);
 
       try {
@@ -34,14 +43,14 @@ export function useGarminAutoSync() {
           return;
         }
 
-        if (data.sessionExpired) {
-          setSessionExpired(true);
+        if (data.connected && Array.isArray(data.activities)) {
+          setActivities(data.activities);
+          setSessionExpired(false);
           return;
         }
 
-        if (Array.isArray(data.activities)) {
-          setActivities(data.activities);
-          setSessionExpired(false);
+        if (data.sessionExpired) {
+          setSessionExpired(true);
         }
       } catch {
         if (!cancelled) {

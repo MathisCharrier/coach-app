@@ -164,7 +164,7 @@ export function CalendarView() {
 
   if (!cursor) {
     return (
-      <section className="h-80 animate-pulse rounded-3xl border border-zinc-800 bg-zinc-900" />
+      <section className="h-80 animate-pulse rounded-3xl border border-gray-200 bg-white shadow-sm" />
     );
   }
 
@@ -201,22 +201,22 @@ export function CalendarView() {
   }
 
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+    <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-sm text-zinc-400">Calendrier</h2>
-          <p className="mt-1 text-lg font-medium text-white">{capitalizeFirst(label)}</p>
+          <h2 className="text-sm text-zinc-500">Calendrier</h2>
+          <p className="mt-1 text-lg font-medium text-zinc-900">{capitalizeFirst(label)}</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-full border border-zinc-800 p-1">
+          <div className="flex rounded-full border border-gray-200 bg-gray-50 p-1">
             {(["month", "week"] as const).map((item) => (
               <button
                 key={item}
                 type="button"
                 onClick={() => setMode(item)}
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs text-zinc-400",
-                  mode === item && "bg-zinc-950 text-zinc-50"
+                  "rounded-full px-3 py-1 text-xs text-zinc-500",
+                  mode === item && "bg-white text-zinc-900 shadow-sm"
                 )}
               >
                 {item === "month" ? "Mois" : "Semaine"}
@@ -227,7 +227,7 @@ export function CalendarView() {
             type="button"
             aria-label="Période précédente"
             onClick={() => shift(-1)}
-            className="rounded-full border border-zinc-800 p-2 text-zinc-400"
+            className="rounded-full border border-gray-200 bg-white p-2 text-zinc-500 shadow-sm"
           >
             <ChevronLeft className="size-4" />
           </button>
@@ -235,7 +235,7 @@ export function CalendarView() {
             type="button"
             aria-label="Période suivante"
             onClick={() => shift(1)}
-            className="rounded-full border border-zinc-800 p-2 text-zinc-400"
+            className="rounded-full border border-gray-200 bg-white p-2 text-zinc-500 shadow-sm"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -261,17 +261,17 @@ export function CalendarView() {
               onClick={() => setSelectedDate(date)}
               aria-pressed={key === selectedKey}
               className={cn(
-                "min-h-16 cursor-pointer rounded-2xl border border-zinc-800 p-2 text-left hover:bg-zinc-800 md:min-h-24",
+                "min-h-16 cursor-pointer rounded-2xl border border-gray-200 p-2 text-left hover:bg-orange-50 md:min-h-24",
                 mode === "week" && "min-h-36",
-                muted || sessions.length === 0 ? "bg-zinc-950/40" : "bg-zinc-800/70",
-                key === todayKey && "ring-1 ring-emerald-500/40",
-                key === selectedKey && "ring-1 ring-white"
+                muted || sessions.length === 0 ? "bg-gray-50" : "bg-white shadow-sm",
+                key === todayKey && "ring-1 ring-orange-500/40",
+                key === selectedKey && "border-orange-500 ring-1 ring-orange-500"
               )}
             >
               <p
                 className={cn(
                   "text-xs tabular-nums",
-                  muted ? "text-zinc-700" : "text-zinc-400"
+                  muted ? "text-zinc-400" : "text-zinc-900"
                 )}
               >
                 {date.getDate()}
@@ -284,7 +284,7 @@ export function CalendarView() {
                       <span
                         key={session.id}
                         title={session.title}
-                        className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400"
+                        className="inline-flex size-6 items-center justify-center rounded-full bg-orange-50 text-orange-500"
                       >
                         <Icon className="size-3.5" aria-hidden />
                         <span className="sr-only">{session.title}</span>
@@ -301,25 +301,25 @@ export function CalendarView() {
       {selectedDate && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 p-4 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/20 p-4 backdrop-blur-sm"
               onClick={() => setSelectedDate(null)}
             >
               <div
                 role="dialog"
                 aria-modal="true"
                 aria-label={selectedLabel}
-                className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"
+                className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm text-zinc-400">Récapitulatif</p>
-                    <h3 className="mt-1 text-xl font-medium text-white">{selectedLabel}</h3>
+                    <p className="text-sm text-zinc-500">Récapitulatif</p>
+                    <h3 className="mt-1 text-xl font-medium text-zinc-900">{selectedLabel}</h3>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSelectedDate(null)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 px-3 py-1.5 text-sm text-zinc-300"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-zinc-700 shadow-sm"
                   >
                     <X className="size-4" />
                     Fermer
@@ -336,18 +336,18 @@ export function CalendarView() {
                         <li key={session.id}>
                           <Link
                             href={`/activity/${session.id}`}
-                            className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3"
+                            className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3"
                           >
                             <div className="flex min-w-0 items-center gap-3">
-                              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+                              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-500">
                                 <Icon className="size-4" aria-hidden />
                               </span>
                               <div className="min-w-0">
-                                <p className="truncate text-sm text-zinc-50">{session.title}</p>
+                                <p className="truncate text-sm text-zinc-900">{session.title}</p>
                                 <p className="text-xs text-zinc-500">{session.status}</p>
                               </div>
                             </div>
-                            <p className="shrink-0 text-right text-xs text-zinc-400 tabular-nums">
+                            <p className="shrink-0 text-right text-xs text-zinc-500 tabular-nums">
                               {session.durationLabel}
                               <span className="mt-1 block">Charge {session.loadLabel}</span>
                             </p>
@@ -358,8 +358,8 @@ export function CalendarView() {
                   </ul>
                 )}
 
-                <p className="mt-5 text-sm text-zinc-400">
-                  Nombre de pas <span className="text-zinc-200 tabular-nums">—</span>
+                <p className="mt-5 text-sm text-zinc-500">
+                  Nombre de pas <span className="text-zinc-900 tabular-nums">—</span>
                 </p>
               </div>
             </div>,

@@ -2,20 +2,23 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  cacheGarminClient,
-  clearCachedGarminClient,
-} from "@/lib/garminClient";
+  clearGarminMfaChallenge,
+  saveGarminMfaChallenge,
+} from "@/lib/garmin/mfa-cookie";
 import {
   clearGarminSessionCookie,
   getGarminSessionForUser,
   saveGarminSessionForUser,
 } from "@/lib/garmin/session-cookie";
+import { beginGarminLogin } from "@/lib/garmin/sso-login";
 import {
+  GARMIN_HISTORY_LIMIT,
   getGarminAuthErrorMessage,
-  syncGarminCyclingActivities,
   syncGarminWithStoredTokens,
 } from "@/lib/garmin/sync-cycling-activities";
 import { createClient } from "@/lib/supabase/server";
+
+export const maxDuration = 10;
 
 const garminLoginSchema = z.object({
   email: z.string().trim().email("Adresse e-mail Garmin invalide."),
@@ -32,126 +35,129 @@ async function requireUser() {
 }
 
 export async function GET() {
+  const user = await requireUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "Authentification requise.", connected: false },
+      { status: 401 }
+    );
+  }
+
+  const storedTokens = await getGarminSessionForUser(user.id);
+  if (!storedTokens) {
+    return NextResponse.json({
+      connected: false,
+      activities: [],
+      count: 0,
+      sessionExpired: false,
+    });
+  }
+
   try {
-    const user = await requireUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentification requise.", sessionExpired: true },
-        { status: 401 }
-      );
-    }
-
-    const storedTokens = await getGarminSessionForUser(user.id);
-    if (!storedTokens) {
-      return NextResponse.json({
-        activities: [],
-        count: 0,
-        sessionExpired: true,
-        silent: true,
-      });
-    }
-
     const { activities, tokens } = await syncGarminWithStoredTokens(
       storedTokens,
-      5
+      GARMIN_HISTORY_LIMIT
     );
     await saveGarminSessionForUser(user.id, tokens);
 
     return NextResponse.json({
+      connected: true,
       activities,
       count: activities.length,
       sessionExpired: false,
     });
   } catch (error) {
-    console.error("[garmin-sync] silent refresh failed");
-    await clearGarminSessionCookie();
+    const { message, status, sessionExpired } = getGarminAuthErrorMessage(error);
+    if (sessionExpired) {
+      console.error("[garmin-sync] stored session rejected");
+      await clearGarminSessionCookie();
+    }
 
-    const { message } = getGarminAuthErrorMessage(error);
-
-    return NextResponse.json({
-      activities: [],
-      count: 0,
-      sessionExpired: true,
-      silent: true,
-      error: message,
-    });
+    return NextResponse.json(
+      {
+        connected: false,
+        activities: [],
+        count: 0,
+        sessionExpired: Boolean(sessionExpired),
+        error: message,
+      },
+      { status }
+    );
   }
 }
 
 export async function POST(request: Request) {
+  const user = await requireUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "Authentification requise.", connected: false },
+      { status: 401 }
+    );
+  }
+
+  let body: unknown;
   try {
-    const user = await requireUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentification requise." },
-        { status: 401 }
-      );
-    }
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Corps de requête JSON invalide." },
+      { status: 400 }
+    );
+  }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { error: "Corps de requête JSON invalide." },
-        { status: 400 }
-      );
-    }
+  const loginRequest = garminLoginSchema.safeParse(body);
+  if (!loginRequest.success) {
+    return NextResponse.json(
+      {
+        error: "Paramètres invalides.",
+        details: z.treeifyError(loginRequest.error),
+      },
+      { status: 400 }
+    );
+  }
 
-    const loginRequest = garminLoginSchema.safeParse(body);
-    if (!loginRequest.success) {
-      return NextResponse.json(
-        {
-          error: "Paramètres invalides.",
-          details: z.treeifyError(loginRequest.error),
-        },
-        { status: 400 }
-      );
-    }
-
+  try {
     const { email, password } = loginRequest.data;
-    const result = await syncGarminCyclingActivities(email, password);
+    const result = await beginGarminLogin(email, password);
 
     if (result.status === "mfa_required") {
-      cacheGarminClient(user.id, result.client);
+      await saveGarminMfaChallenge(user.id, result.challenge);
       return NextResponse.json({
         status: "MFA_REQUIRED",
         message:
-          "Garmin demande un code de vérification. Saisis le code reçu par e-mail ou application.",
+          "Garmin demande un code de vérification. Saisis le code reçu par e-mail ou SMS.",
       });
     }
 
-    try {
-      await saveGarminSessionForUser(user.id, result.tokens);
-    } catch {
+    await saveGarminSessionForUser(user.id, result.tokens);
+    await clearGarminMfaChallenge();
+
+    return NextResponse.json({
+      status: "AUTHENTICATED",
+      connected: true,
+      activities: result.activities,
+      count: result.activities.length,
+      sessionExpired: false,
+    });
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : "";
+
+    if (/GARMIN_SESSION_SECRET/i.test(raw)) {
       return NextResponse.json(
-        {
-          error:
-            "Session Garmin non persistée : configurez GARMIN_SESSION_SECRET sur le serveur.",
-        },
+        { error: "GARMIN_SESSION_SECRET manquant sur le serveur." },
         { status: 500 }
       );
     }
 
-    clearCachedGarminClient(user.id);
-
-    return NextResponse.json({
-      status: "AUTHENTICATED",
-      activities: result.activities.slice(0, 5),
-      count: Math.min(result.activities.length, 5),
-      sessionExpired: false,
-    });
-  } catch (error) {
-    clearCachedGarminClient();
-
-    const { message, status, sessionExpired } =
-      getGarminAuthErrorMessage(error);
-
-    if (sessionExpired) {
-      await clearGarminSessionCookie();
+    if (/invalid credentials/i.test(raw)) {
+      return NextResponse.json(
+        { error: "E-mail ou mot de passe Garmin incorrect." },
+        { status: 401 }
+      );
     }
 
-    return NextResponse.json({ error: message, sessionExpired }, { status });
+    const { message, status } = getGarminAuthErrorMessage(error);
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
@@ -164,7 +170,7 @@ export async function DELETE() {
     );
   }
 
-  clearCachedGarminClient(user.id);
+  await clearGarminMfaChallenge();
   await clearGarminSessionCookie();
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, connected: false });
 }

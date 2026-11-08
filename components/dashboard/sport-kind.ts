@@ -12,6 +12,28 @@ export const SPORT_META: Record<
   other: { label: "Autre", icon: HeartPulse },
 };
 
+export function sportFromGarmin(activity: {
+  activityType?: string;
+  title: string;
+  activityName?: string;
+}): SportKind {
+  const typeKey = activity.activityType?.toLowerCase() ?? "";
+
+  if (/run|trail|treadmill|walk|hike/.test(typeKey)) {
+    return "running";
+  }
+
+  if (/cycl|bik|ride/.test(typeKey)) {
+    return "cycling";
+  }
+
+  if (/strength|fitness|gym/.test(typeKey)) {
+    return "strength";
+  }
+
+  return sportFromTitle(activity.activityName ?? activity.title, "other");
+}
+
 export function sportFromTitle(title: string, fallback: SportKind = "other"): SportKind {
   const value = title.toLowerCase();
 

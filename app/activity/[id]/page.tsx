@@ -2,14 +2,10 @@ import { Suspense } from "react";
 
 import { ActivityDetail } from "@/components/activity/activity-detail";
 
-export default function ActivityPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function ActivityPage() {
   return (
-    <Suspense fallback={<div className="min-h-full flex-1 bg-zinc-950" />}>
-      <ActivityDetail params={params} />
+    <Suspense fallback={<div className="min-h-full flex-1 bg-slate-50" />}>
+      <ActivityDetail />
     </Suspense>
   );
 }

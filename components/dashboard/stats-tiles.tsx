@@ -20,12 +20,12 @@ function StatCard({
   icon: LucideIcon;
 }) {
   return (
-    <article className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+    <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-zinc-400">{title}</p>
-        <Icon className="size-4 text-emerald-500" aria-hidden />
+        <p className="text-sm text-zinc-500">{title}</p>
+        <Icon className="size-4 text-orange-500" aria-hidden />
       </div>
-      <p className="mt-6 text-4xl font-medium tracking-tight text-white tabular-nums">
+      <p className="mt-6 text-4xl font-medium tracking-tight text-zinc-900 tabular-nums">
         {value}
         {unit ? (
           <span className="ml-2 text-base font-normal text-zinc-500">{unit}</span>
@@ -36,14 +36,14 @@ function StatCard({
 }
 
 export function StatsTiles({ view }: { view: SportView }) {
-  const ftpWatts = useAthleteStore((s) => s.ftpWatts);
-  const vo2Max = useAthleteStore((s) => s.vo2Max);
+  const ftp = useAthleteStore((s) => s.ftp);
+  const vo2max = useAthleteStore((s) => s.vo2max);
   const planned = useWorkoutPlanStore((s) => s.upcoming.length);
 
   if (view === "cycling") {
     return (
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <StatCard title="FTP" value={String(ftpWatts)} unit="W" icon={Bike} />
+        <StatCard title="FTP" value={String(ftp)} unit="W" icon={Bike} />
         <StatCard
           title="Séances vélo"
           value={String(planned)}
@@ -59,7 +59,7 @@ export function StatsTiles({ view }: { view: SportView }) {
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard
           title="VO₂ Max"
-          value={String(vo2Max)}
+          value={String(vo2max)}
           unit="ml/kg/min"
           icon={Footprints}
         />
@@ -79,10 +79,10 @@ export function StatsTiles({ view }: { view: SportView }) {
 
   return (
     <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <StatCard title="FTP" value={String(ftpWatts)} unit="W" icon={Bike} />
+      <StatCard title="FTP" value={String(ftp)} unit="W" icon={Bike} />
       <StatCard
         title="VO₂ Max"
-        value={String(vo2Max)}
+        value={String(vo2max)}
         unit="ml/kg/min"
         icon={HeartPulse}
       />

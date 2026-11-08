@@ -19,7 +19,7 @@ export function UpcomingSessionsSection() {
   const upcoming = useWorkoutPlanStore((s) => s.upcoming);
 
   return (
-    <Card className="rounded-3xl border border-zinc-800 bg-zinc-900 shadow-none">
+    <Card className="rounded-3xl border border-gray-200 bg-white shadow-sm">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CalendarClock className="size-4 text-primary" aria-hidden />

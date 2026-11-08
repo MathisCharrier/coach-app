@@ -42,7 +42,7 @@ export function RideHistorySection() {
   const hasData = activities.length > 0;
 
   return (
-    <Card className="rounded-3xl border border-zinc-800 bg-zinc-900 shadow-none">
+    <Card className="rounded-3xl border border-gray-200 bg-white shadow-sm">
       <CardHeader>
         <div className="flex items-center gap-2">
           <History className="size-4 text-primary" aria-hidden />
@@ -58,7 +58,7 @@ export function RideHistorySection() {
         {sessionExpired && !isSyncing ? (
           <Link
             href="/profile"
-            className="inline-flex text-xs text-amber-300/90 underline-offset-2 hover:underline"
+            className="inline-flex text-xs text-orange-700 underline-offset-2 hover:underline"
           >
             Session Garmin expirée, reconnectez-vous dans le Profil
           </Link>

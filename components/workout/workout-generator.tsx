@@ -37,7 +37,8 @@ type WorkoutResult = {
 };
 
 export function WorkoutGenerator() {
-  const athleteFtp = useAthleteStore((s) => s.ftpWatts);
+  const athleteFtp = useAthleteStore((s) => s.ftp);
+  const setAthleteMetrics = useAthleteStore((s) => s.setAthleteMetrics);
   const addWorkout = useWorkoutPlanStore((s) => s.addWorkout);
   const [ftp, setFtp] = useState(String(athleteFtp));
   const [fatigueLevel, setFatigueLevel] =
@@ -55,6 +56,8 @@ export function WorkoutGenerator() {
       setError("La FTP doit être un nombre strictement positif.");
       return;
     }
+
+    setAthleteMetrics({ ftp: parsedFtp });
 
     setIsLoading(true);
 
@@ -105,7 +108,7 @@ export function WorkoutGenerator() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <Card className="h-full rounded-3xl border border-zinc-800 bg-zinc-900 shadow-none">
+      <Card className="h-full rounded-3xl border border-gray-200 bg-white shadow-sm">
         <CardHeader>
           <div className="mb-2 flex size-11 items-center justify-center rounded-full bg-primary/15 text-primary">
             <Sparkles className="size-5" aria-hidden />
