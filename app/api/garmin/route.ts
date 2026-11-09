@@ -6,10 +6,10 @@ import {
   saveGarminMfaChallenge,
 } from "@/lib/garmin/mfa-cookie";
 import {
-  clearGarminSessionCookie,
+  clearGarminSessionForUser,
   getGarminSessionForUser,
   saveGarminSessionForUser,
-} from "@/lib/garmin/session-cookie";
+} from "@/lib/garmin/session-store";
 import { beginGarminLogin } from "@/lib/garmin/sso-login";
 import {
   GARMIN_HISTORY_LIMIT,
@@ -43,34 +43,36 @@ export async function GET() {
     );
   }
 
-  const storedTokens = await getGarminSessionForUser(user.id);
-  if (!storedTokens) {
+  const stored = await getGarminSessionForUser(user.id);
+  if (!stored) {
     return NextResponse.json({
       connected: false,
       activities: [],
       count: 0,
       sessionExpired: false,
+      garminUsername: null,
     });
   }
 
   try {
     const { activities, tokens } = await syncGarminWithStoredTokens(
-      storedTokens,
+      stored.tokens,
       GARMIN_HISTORY_LIMIT
     );
-    await saveGarminSessionForUser(user.id, tokens);
+    await saveGarminSessionForUser(user.id, tokens, stored.garminUsername);
 
     return NextResponse.json({
       connected: true,
       activities,
       count: activities.length,
       sessionExpired: false,
+      garminUsername: stored.garminUsername,
     });
   } catch (error) {
     const { message, status, sessionExpired } = getGarminAuthErrorMessage(error);
     if (sessionExpired) {
       console.error("[garmin-sync] stored session rejected");
-      await clearGarminSessionCookie();
+      await clearGarminSessionForUser(user.id);
     }
 
     return NextResponse.json(
@@ -79,6 +81,7 @@ export async function GET() {
         activities: [],
         count: 0,
         sessionExpired: Boolean(sessionExpired),
+        garminUsername: null,
         error: message,
       },
       { status }
@@ -129,7 +132,7 @@ export async function POST(request: Request) {
       });
     }
 
-    await saveGarminSessionForUser(user.id, result.tokens);
+    await saveGarminSessionForUser(user.id, result.tokens, email);
     await clearGarminMfaChallenge();
 
     return NextResponse.json({
@@ -138,6 +141,7 @@ export async function POST(request: Request) {
       activities: result.activities,
       count: result.activities.length,
       sessionExpired: false,
+      garminUsername: email,
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
@@ -171,6 +175,6 @@ export async function DELETE() {
   }
 
   await clearGarminMfaChallenge();
-  await clearGarminSessionCookie();
-  return NextResponse.json({ ok: true, connected: false });
+  await clearGarminSessionForUser(user.id);
+  return NextResponse.json({ ok: true, connected: false, garminUsername: null });
 }

@@ -22,7 +22,8 @@ function isChallenge(value: unknown): value is GarminMfaChallenge {
     typeof challenge.csrf === "string" &&
     typeof challenge.signinUrl === "string" &&
     typeof challenge.jar === "object" &&
-    challenge.jar !== null
+    challenge.jar !== null &&
+    (challenge.email === undefined || typeof challenge.email === "string")
   );
 }
 

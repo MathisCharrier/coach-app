@@ -28,6 +28,8 @@ export type GarminMfaChallenge = {
   csrf: string;
   signinUrl: string;
   jar: SerializedCookieJar;
+  /** E-mail Garmin utilisé pour la connexion (affiché après MFA). */
+  email?: string;
 };
 
 export type GarminPasswordLoginResult =
@@ -233,6 +235,7 @@ export async function beginGarminLogin(
         csrf: mfaCsrf,
         signinUrl,
         jar: jarState,
+        email,
       },
     };
   }
