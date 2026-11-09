@@ -23,6 +23,7 @@ type GarminPayload = {
   sessionExpired?: boolean;
   status?: string;
   activities?: GarminActivitySummary[];
+  garminUsername?: string | null;
   error?: string;
 };
 
@@ -34,6 +35,7 @@ export function GarminConnectForm() {
   const activityCount = useGarminStore((state) => state.activities.length);
 
   const [connected, setConnected] = useState<boolean | null>(null);
+  const [garminUsername, setGarminUsername] = useState<string | null>(null);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,6 +58,7 @@ export function GarminConnectForm() {
 
         const isConnected = data.connected === true;
         setConnected(isConnected);
+        setGarminUsername(data.garminUsername ?? null);
         setSessionExpired(data.sessionExpired === true);
 
         if (isConnected && Array.isArray(data.activities)) {
@@ -64,6 +67,7 @@ export function GarminConnectForm() {
       } catch {
         if (!cancelled) {
           setConnected(false);
+          setGarminUsername(null);
         }
       }
     }
@@ -80,6 +84,7 @@ export function GarminConnectForm() {
     }
     setSessionExpired(false);
     setConnected(true);
+    setGarminUsername(data.garminUsername ?? (email.trim() || null));
     setMfaRequired(false);
     setPassword("");
     setMfaCode("");
@@ -120,6 +125,8 @@ export function GarminConnectForm() {
       if (data.status === "AUTHENTICATED" && Array.isArray(data.activities)) {
         setActivities(data.activities);
         setSessionExpired(false);
+        setConnected(true);
+        setGarminUsername(data.garminUsername ?? (email.trim() || null));
         setPassword("");
         setMfaCode("");
         router.push("/");
@@ -153,6 +160,7 @@ export function GarminConnectForm() {
       }
 
       setConnected(false);
+      setGarminUsername(null);
       setSessionExpired(true);
       setError(data.error ?? "La session Garmin n'est plus valide.");
     } catch {
@@ -172,6 +180,7 @@ export function GarminConnectForm() {
       clearActivities();
       setSessionExpired(false);
       setConnected(false);
+      setGarminUsername(null);
       setMfaRequired(false);
     } catch {
       setError("Impossible de déconnecter Garmin.");
@@ -180,22 +189,26 @@ export function GarminConnectForm() {
     }
   }
 
+  const connectedLabel = garminUsername
+    ? `Compte Garmin de ${garminUsername} connecté`
+    : "Compte Garmin connecté";
+
   return (
     <Card className="rounded-3xl border border-gray-200 bg-white shadow-sm">
       <CardHeader>
         <CardTitle className="text-xl font-semibold">Connexion Garmin</CardTitle>
         <CardDescription>
           Le mot de passe n&apos;est pas enregistré. Une fois la connexion
-          réussie, seuls les jetons de session sont conservés dans un cookie
-          chiffré.
+          réussie, les jetons de session sont chiffrés et stockés dans ton
+          profil Supabase.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {connected ? (
           <div className="space-y-4">
             <p className="flex items-center gap-2 text-sm text-orange-700">
-              <CheckCircle2 className="size-4" aria-hidden />
-              Connecté à Garmin
+              <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+              {connectedLabel}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button type="button" onClick={() => void synchronize()} disabled={busy}>

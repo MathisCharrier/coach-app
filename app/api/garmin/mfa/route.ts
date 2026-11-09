@@ -5,7 +5,7 @@ import {
   clearGarminMfaChallenge,
   readGarminMfaChallenge,
 } from "@/lib/garmin/mfa-cookie";
-import { saveGarminSessionForUser } from "@/lib/garmin/session-cookie";
+import { saveGarminSessionForUser } from "@/lib/garmin/session-store";
 import { submitGarminMfaCode } from "@/lib/garmin/sso-login";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,7 +57,8 @@ export async function POST(request: Request) {
 
   try {
     const synced = await submitGarminMfaCode(challenge, parsed.data.mfaCode);
-    await saveGarminSessionForUser(user.id, synced.tokens);
+    const garminUsername = challenge.email?.trim() || null;
+    await saveGarminSessionForUser(user.id, synced.tokens, garminUsername);
     await clearGarminMfaChallenge();
 
     return NextResponse.json({
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
       activities: synced.activities,
       count: synced.activities.length,
       sessionExpired: false,
+      garminUsername,
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
